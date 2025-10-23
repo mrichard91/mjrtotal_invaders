@@ -6,7 +6,7 @@ const CyberWordInvaders = () => {
   const [level, setLevel] = useState(1);
   const [wordsCleared, setWordsCleared] = useState(0);
   const [wordsNeeded, setWordsNeeded] = useState(25);
-  const [wordsSpawned, setWordsSpawned] = useState(0);
+  const [wordsSpawned, setWordsSpawned] = useState(0); // eslint-disable-line no-unused-vars
   const [gameOver, setGameOver] = useState(false);
   const [currentInput, setCurrentInput] = useState('');
   const [activeWordId, setActiveWordId] = useState(null);
@@ -34,7 +34,7 @@ const CyberWordInvaders = () => {
   const getRandomWord = useCallback(() => {
     const list = wordLists[Math.min(level, 4)] || wordLists[4];
     return list[Math.floor(Math.random() * list.length)];
-  }, [level]);
+  }, [level, wordLists]);
 
   const getSpawnRate = useCallback(() => {
     return Math.max(600 - (level * 50), 150);
@@ -66,10 +66,12 @@ const CyberWordInvaders = () => {
       const usedPositions = [];
 
       for (let i = 0; i < 5; i++) {
-        let wordX = Math.random() * 650 + 20;
+        const generateX = () => Math.random() * 650 + 20;
+        let wordX = generateX();
         let attempts = 0;
+
         while (usedPositions.some(pos => Math.abs(pos - wordX) < 80) && attempts < 20) {
-          wordX = Math.random() * 650 + 20;
+          wordX = generateX();
           attempts++;
         }
 
