@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 const CyberWordInvaders = () => {
   const [words, setWords] = useState([]);
@@ -15,7 +15,7 @@ const CyberWordInvaders = () => {
   const [initialized, setInitialized] = useState(false);
   const gameLoopRef = useRef();
 
-  const wordLists = {
+  const wordLists = useMemo(() => ({
     1: ['mov', 'push', 'pop', 'jmp', 'call', 'ret', 'xor', 'lea', 'test', 'cmp', 'add', 'sub',
         'mul', 'div', 'inc', 'dec', 'nop', 'int', 'jne', 'je', 'jz', 'jnz', 'jg', 'jl', 'and',
         'or', 'not', 'shl', 'shr', 'rol', 'ror', 'neg', 'imul', 'idiv', 'cdq', 'cbw', 'lodsb',
@@ -29,7 +29,7 @@ const CyberWordInvaders = () => {
         'malware', 'virus', 'worm', 'packer', 'unpacker', 'obfuscate', 'decompile'],
     4: ['firewall', 'encrypt', 'decrypt', 'sandbox', 'debugger', 'breakpoint', 'heap',
         'stack', 'buffer', 'overflow', 'injection', 'fuzzing', 'signature', 'heuristic']
-  };
+  }), []);
 
   const getRandomWord = useCallback(() => {
     const list = wordLists[Math.min(level, 4)] || wordLists[4];
@@ -65,13 +65,16 @@ const CyberWordInvaders = () => {
       const initialWords = [];
       const usedPositions = [];
 
+      const isPositionValid = (x, positions) => {
+        return !positions.some(pos => Math.abs(pos - x) < 80);
+      };
+
       for (let i = 0; i < 5; i++) {
-        const generateX = () => Math.random() * 650 + 20;
-        let wordX = generateX();
+        let wordX = Math.random() * 650 + 20;
         let attempts = 0;
 
-        while (usedPositions.some(pos => Math.abs(pos - wordX) < 80) && attempts < 20) {
-          wordX = generateX();
+        while (!isPositionValid(wordX, usedPositions) && attempts < 20) {
+          wordX = Math.random() * 650 + 20;
           attempts++;
         }
 
