@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const CyberWordInvaders = () => {
   const [words, setWords] = useState([]);
@@ -31,22 +31,22 @@ const CyberWordInvaders = () => {
         'stack', 'buffer', 'overflow', 'injection', 'fuzzing', 'signature', 'heuristic']
   };
 
-  const getRandomWord = () => {
+  const getRandomWord = useCallback(() => {
     const list = wordLists[Math.min(level, 4)] || wordLists[4];
     return list[Math.floor(Math.random() * list.length)];
-  };
+  }, [level]);
 
-  const getSpawnRate = () => {
+  const getSpawnRate = useCallback(() => {
     return Math.max(600 - (level * 50), 150);
-  };
+  }, [level]);
 
-  const getWordSpeed = () => {
+  const getWordSpeed = useCallback(() => {
     return 0.4 + (level * 0.2) + Math.random() * 0.4;
-  };
+  }, [level]);
 
-  const getMaxWords = () => {
+  const getMaxWords = useCallback(() => {
     return 10 + Math.floor(level / 2);
-  };
+  }, [level]);
 
   const getLevelTheme = () => {
     const themes = {
@@ -66,19 +66,19 @@ const CyberWordInvaders = () => {
       const usedPositions = [];
 
       for (let i = 0; i < 5; i++) {
-        let x;
+        let wordX = Math.random() * 650 + 20;
         let attempts = 0;
-        do {
-          x = Math.random() * 650 + 20;
+        while (usedPositions.some(pos => Math.abs(pos - wordX) < 80) && attempts < 20) {
+          wordX = Math.random() * 650 + 20;
           attempts++;
-        } while (usedPositions.some(pos => Math.abs(pos - x) < 80) && attempts < 20);
+        }
 
-        usedPositions.push(x);
+        usedPositions.push(wordX);
 
         initialWords.push({
           id: Date.now() + Math.random() + i,
           text: getRandomWord(),
-          x: x,
+          x: wordX,
           y: Math.random() * -200,
           speed: getWordSpeed(),
           progress: 0,
@@ -89,7 +89,7 @@ const CyberWordInvaders = () => {
       setWordsSpawned(5);
       setInitialized(true);
     }
-  }, [initialized, gameOver]);
+  }, [initialized, gameOver, getRandomWord, getWordSpeed]);
 
   useEffect(() => {
     if (wordsCleared >= wordsNeeded) {
@@ -139,7 +139,7 @@ const CyberWordInvaders = () => {
     }, getSpawnRate());
 
     return () => clearInterval(spawnInterval);
-  }, [gameOver, level, wordsNeeded]);
+  }, [gameOver, wordsNeeded, getMaxWords, getRandomWord, getWordSpeed, getSpawnRate]);
 
   useEffect(() => {
     if (gameOver) return;
@@ -172,22 +172,22 @@ const CyberWordInvaders = () => {
     return () => clearInterval(timer);
   }, [explosions]);
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = useCallback((e) => {
     if (gameOver) {
       if (e.key === 'Enter') restartGame();
       return;
     }
 
     const key = e.key.toLowerCase();
-    
+
     if (key.length === 1 && key.match(/[a-z0-9]/)) {
       const newInput = currentInput + key;
-      
+
       let targetWord = null;
       if (activeWordId) {
         targetWord = words.find(w => w.id === activeWordId);
       }
-      
+
       if (!targetWord || !targetWord.text.startsWith(newInput)) {
         // Reset progress on previously active word
         if (activeWordId) {
@@ -208,9 +208,9 @@ const CyberWordInvaders = () => {
 
       if (targetWord && targetWord.text.startsWith(newInput)) {
         setCurrentInput(newInput);
-        
-        setWords(prev => prev.map(w => 
-          w.id === targetWord.id 
+
+        setWords(prev => prev.map(w =>
+          w.id === targetWord.id
             ? { ...w, progress: newInput.length }
             : w
         ));
@@ -230,16 +230,16 @@ const CyberWordInvaders = () => {
       setCurrentInput('');
       setActiveWordId(null);
     }
-  };
+  }, [gameOver, currentInput, activeWordId, words, explodeWord, restartGame]);
 
-  const explodeWord = (word) => {
+  const explodeWord = useCallback((word) => {
     setWords(prev => prev.filter(w => w.id !== word.id));
     setScore(s => s + word.text.length * 10);
     setWordsCleared(c => c + 1);
     setExplosions(e => [...e, { x: word.x, y: word.y, time: Date.now() }]);
-  };
+  }, []);
 
-  const restartGame = () => {
+  const restartGame = useCallback(() => {
     setWords([]);
     setScore(0);
     setLevel(1);
@@ -252,12 +252,12 @@ const CyberWordInvaders = () => {
     setExplosions([]);
     setLevelUp(false);
     setInitialized(false);
-  };
+  }, []);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentInput, activeWordId, words, gameOver]);
+  }, [handleKeyPress]);
 
   return (
     <div style={{ 
