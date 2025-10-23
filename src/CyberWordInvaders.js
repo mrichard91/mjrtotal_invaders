@@ -5,38 +5,44 @@ const CyberWordInvaders = () => {
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [wordsCleared, setWordsCleared] = useState(0);
-  const [wordsNeeded, setWordsNeeded] = useState(10);
+  const [wordsNeeded, setWordsNeeded] = useState(25);
+  const [wordsSpawned, setWordsSpawned] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [currentInput, setCurrentInput] = useState('');
   const [activeWordId, setActiveWordId] = useState(null);
   const [explosions, setExplosions] = useState([]);
   const [levelUp, setLevelUp] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const gameLoopRef = useRef();
 
-  const wordList = [
-    'yara', 'ghidra', 'ida', 'radare2', 'ollydbg', 'wireshark', 'xdbg', 'immunity',
-    'mov', 'push', 'pop', 'jmp', 'call', 'ret', 'xor', 'lea', 'test', 'cmp', 'add', 'sub',
-    'mul', 'div', 'inc', 'dec', 'nop', 'int', 'syscall', 'jne', 'je', 'jz', 'jnz',
-    'shellcode', 'payload', 'exploit', 'backdoor', 'rootkit', 'ransomware', 'trojan',
-    'malware', 'virus', 'worm', 'packer', 'unpacker', 'obfuscate', 'decompile',
-    'firewall', 'encrypt', 'decrypt', 'sandbox', 'debugger', 'breakpoint', 'heap',
-    'stack', 'buffer', 'overflow', 'injection', 'fuzzing', 'signature', 'heuristic'
-  ];
+  const wordLists = {
+    1: ['mov', 'push', 'pop', 'jmp', 'call', 'ret', 'xor', 'lea', 'test', 'cmp', 'add', 'sub',
+        'mul', 'div', 'inc', 'dec', 'nop', 'int', 'jne', 'je', 'jz', 'jnz', 'jg', 'jl', 'and',
+        'or', 'not', 'shl', 'shr', 'rol', 'ror', 'neg', 'imul', 'idiv', 'cdq', 'cbw', 'lodsb',
+        'stosb', 'movsb', 'scasb', 'cmpsb', 'rep', 'repe', 'repne', 'loop', 'jbe', 'ja', 'jna',
+        'jge', 'jle', 'jc', 'jnc', 'jo', 'jno', 'js', ],
+    2: ['yara', 'ghidra', 'ida', 'radare2', 'ollydbg', 'wireshark', 'xdbg', 'immunity'],
+    3: ['shellcode', 'payload', 'exploit', 'backdoor', 'rootkit', 'ransomware', 'trojan',
+        'malware', 'virus', 'worm', 'packer', 'unpacker', 'obfuscate', 'decompile'],
+    4: ['firewall', 'encrypt', 'decrypt', 'sandbox', 'debugger', 'breakpoint', 'heap',
+        'stack', 'buffer', 'overflow', 'injection', 'fuzzing', 'signature', 'heuristic']
+  };
 
   const getRandomWord = () => {
-    return wordList[Math.floor(Math.random() * wordList.length)];
+    const list = wordLists[Math.min(level, 4)] || wordLists[4];
+    return list[Math.floor(Math.random() * list.length)];
   };
 
   const getSpawnRate = () => {
-    return Math.max(1500 - (level * 100), 300);
+    return Math.max(600 - (level * 50), 150);
   };
 
   const getWordSpeed = () => {
-    return 0.5 + (level * 0.2) + Math.random() * 0.4;
+    return 0.4 + (level * 0.2) + Math.random() * 0.4;
   };
 
   const getMaxWords = () => {
-    return 3 + Math.floor(level / 2);
+    return 10 + Math.floor(level / 2);
   };
 
   const getLevelTheme = () => {
@@ -50,40 +56,87 @@ const CyberWordInvaders = () => {
     return themes[Math.min(level, 5)] || themes[5];
   };
 
+  // Initialize game with 5 words at start
   useEffect(() => {
-    if (wordsCleared >= wordsNeeded && words.length === 0) {
+    if (!initialized && !gameOver) {
+      const initialWords = [];
+      const usedPositions = [];
+
+      for (let i = 0; i < 5; i++) {
+        let x;
+        let attempts = 0;
+        do {
+          x = Math.random() * 650 + 20;
+          attempts++;
+        } while (usedPositions.some(pos => Math.abs(pos - x) < 80) && attempts < 20);
+
+        usedPositions.push(x);
+
+        initialWords.push({
+          id: Date.now() + Math.random() + i,
+          text: getRandomWord(),
+          x: x,
+          y: Math.random() * -200,
+          speed: getWordSpeed(),
+          progress: 0,
+        });
+      }
+
+      setWords(initialWords);
+      setWordsSpawned(5);
+      setInitialized(true);
+    }
+  }, [initialized, gameOver]);
+
+  useEffect(() => {
+    if (wordsCleared >= wordsNeeded) {
+      // Clear remaining words
+      setWords([]);
       setLevel(prev => prev + 1);
       setWordsCleared(0);
-      setWordsNeeded(prev => prev + 5);
+      setWordsSpawned(0);
+      setWordsNeeded(25);
       setLevelUp(true);
       setTimeout(() => setLevelUp(false), 2000);
     }
-  }, [wordsCleared, wordsNeeded, words.length]);
+  }, [wordsCleared, wordsNeeded]);
 
   useEffect(() => {
     if (gameOver) return;
 
     const spawnInterval = setInterval(() => {
-      setWords(prev => {
-        // Limit max words on screen based on level
-        if (prev.length >= getMaxWords()) {
-          return prev;
+      let shouldIncrement = false;
+
+      setWordsSpawned(currentSpawned => {
+        // Stop spawning if we've spawned enough words for this level
+        if (currentSpawned >= wordsNeeded) {
+          return currentSpawned;
         }
-        
-        const newWord = {
-          id: Date.now() + Math.random(),
-          text: getRandomWord(),
-          x: Math.random() * 550 + 20, // More conservative spacing
-          y: 0,
-          speed: getWordSpeed(),
-          progress: 0,
-        };
-        return [...prev, newWord];
+
+        setWords(prev => {
+          // Limit max words on screen based on level
+          if (prev.length >= getMaxWords()) {
+            return prev;
+          }
+
+          const newWord = {
+            id: Date.now() + Math.random(),
+            text: getRandomWord(),
+            x: Math.random() * 550 + 20,
+            y: 0,
+            speed: getWordSpeed(),
+            progress: 0,
+          };
+          shouldIncrement = true;
+          return [...prev, newWord];
+        });
+
+        return shouldIncrement ? currentSpawned + 1 : currentSpawned;
       });
     }, getSpawnRate());
 
     return () => clearInterval(spawnInterval);
-  }, [gameOver, level, words.length, wordsCleared, wordsNeeded]);
+  }, [gameOver, level, wordsNeeded]);
 
   useEffect(() => {
     if (gameOver) return;
@@ -135,13 +188,17 @@ const CyberWordInvaders = () => {
       if (!targetWord || !targetWord.text.startsWith(newInput)) {
         // Reset progress on previously active word
         if (activeWordId) {
-          setWords(prev => prev.map(w => 
+          setWords(prev => prev.map(w =>
             w.id === activeWordId ? { ...w, progress: 0 } : w
           ));
         }
-        
-        targetWord = words.find(w => w.text.startsWith(newInput) && w.progress === 0);
-        if (targetWord) {
+
+        // Find all matching words and pick the lowest one (highest y value)
+        const matchingWords = words.filter(w => w.text.startsWith(newInput) && w.progress === 0);
+        if (matchingWords.length > 0) {
+          targetWord = matchingWords.reduce((lowest, current) =>
+            current.y > lowest.y ? current : lowest
+          );
           setActiveWordId(targetWord.id);
         }
       }
@@ -173,16 +230,10 @@ const CyberWordInvaders = () => {
   };
 
   const explodeWord = (word) => {
-    setWords(prev => {
-      const remaining = prev.filter(w => w.id !== word.id);
-      
-      setScore(s => s + word.text.length * 10);
-      setWordsCleared(c => c + 1);
-      
-      setExplosions(e => [...e, { x: word.x, y: word.y, time: Date.now() }]);
-      
-      return remaining;
-    });
+    setWords(prev => prev.filter(w => w.id !== word.id));
+    setScore(s => s + word.text.length * 10);
+    setWordsCleared(c => c + 1);
+    setExplosions(e => [...e, { x: word.x, y: word.y, time: Date.now() }]);
   };
 
   const restartGame = () => {
@@ -190,12 +241,14 @@ const CyberWordInvaders = () => {
     setScore(0);
     setLevel(1);
     setWordsCleared(0);
-    setWordsNeeded(10);
+    setWordsSpawned(0);
+    setWordsNeeded(25);
     setGameOver(false);
     setCurrentInput('');
     setActiveWordId(null);
     setExplosions([]);
     setLevelUp(false);
+    setInitialized(false);
   };
 
   useEffect(() => {
@@ -401,7 +454,7 @@ const CyberWordInvaders = () => {
         )}
 
         {/* Instructions */}
-        {words.length === 0 && !gameOver && (
+        {words.length === 0 && !gameOver && level === 1 && wordsCleared === 0 && (
           <div style={{
             position: 'absolute',
             top: 0,
