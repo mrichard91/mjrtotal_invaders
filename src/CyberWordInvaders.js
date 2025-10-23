@@ -172,6 +172,28 @@ const CyberWordInvaders = () => {
     return () => clearInterval(timer);
   }, [explosions]);
 
+  const explodeWord = useCallback((word) => {
+    setWords(prev => prev.filter(w => w.id !== word.id));
+    setScore(s => s + word.text.length * 10);
+    setWordsCleared(c => c + 1);
+    setExplosions(e => [...e, { x: word.x, y: word.y, time: Date.now() }]);
+  }, []);
+
+  const restartGame = useCallback(() => {
+    setWords([]);
+    setScore(0);
+    setLevel(1);
+    setWordsCleared(0);
+    setWordsSpawned(0);
+    setWordsNeeded(25);
+    setGameOver(false);
+    setCurrentInput('');
+    setActiveWordId(null);
+    setExplosions([]);
+    setLevelUp(false);
+    setInitialized(false);
+  }, []);
+
   const handleKeyPress = useCallback((e) => {
     if (gameOver) {
       if (e.key === 'Enter') restartGame();
@@ -231,28 +253,6 @@ const CyberWordInvaders = () => {
       setActiveWordId(null);
     }
   }, [gameOver, currentInput, activeWordId, words, explodeWord, restartGame]);
-
-  const explodeWord = useCallback((word) => {
-    setWords(prev => prev.filter(w => w.id !== word.id));
-    setScore(s => s + word.text.length * 10);
-    setWordsCleared(c => c + 1);
-    setExplosions(e => [...e, { x: word.x, y: word.y, time: Date.now() }]);
-  }, []);
-
-  const restartGame = useCallback(() => {
-    setWords([]);
-    setScore(0);
-    setLevel(1);
-    setWordsCleared(0);
-    setWordsSpawned(0);
-    setWordsNeeded(25);
-    setGameOver(false);
-    setCurrentInput('');
-    setActiveWordId(null);
-    setExplosions([]);
-    setLevelUp(false);
-    setInitialized(false);
-  }, []);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
