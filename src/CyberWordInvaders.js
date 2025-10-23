@@ -21,7 +21,10 @@ const CyberWordInvaders = () => {
         'or', 'not', 'shl', 'shr', 'rol', 'ror', 'neg', 'imul', 'idiv', 'cdq', 'cbw', 'lodsb',
         'stosb', 'movsb', 'scasb', 'cmpsb', 'rep', 'repe', 'repne', 'loop', 'jbe', 'ja', 'jna',
         'jge', 'jle', 'jc', 'jnc', 'jo', 'jno', 'js', ],
-    2: ['yara', 'ghidra', 'ida', 'radare2', 'ollydbg', 'wireshark', 'xdbg', 'immunity'],
+    2: ['printf', 'scanf', 'malloc', 'free', 'calloc', 'realloc', 'strlen', 'strcpy', 'strcat',
+        'strcmp', 'strncpy', 'memcpy', 'memset', 'memmove', 'fopen', 'fclose', 'fread', 'fwrite',
+        'fprintf', 'fscanf', 'fgets', 'fputs', 'getchar', 'putchar', 'atoi', 'atof', 'sprintf',
+        'sscanf', 'strstr', 'strchr', 'strtok', 'rand', 'srand', 'exit', 'abort'],
     3: ['shellcode', 'payload', 'exploit', 'backdoor', 'rootkit', 'ransomware', 'trojan',
         'malware', 'virus', 'worm', 'packer', 'unpacker', 'obfuscate', 'decompile'],
     4: ['firewall', 'encrypt', 'decrypt', 'sandbox', 'debugger', 'breakpoint', 'heap',
@@ -48,10 +51,10 @@ const CyberWordInvaders = () => {
   const getLevelTheme = () => {
     const themes = {
       1: 'x86 ASSEMBLY',
-      2: 'C++ STDLIB',
-      3: 'PYTHON ASYNCIO',
-      4: 'RUST',
-      5: 'MALWARE ANALYSIS'
+      2: 'ANSI C FUNCTIONS',
+      3: 'MALWARE TERMS',
+      4: 'SECURITY CONCEPTS',
+      5: 'ADVANCED THREATS'
     };
     return themes[Math.min(level, 5)] || themes[5];
   };
