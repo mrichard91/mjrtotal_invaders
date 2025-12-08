@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 
 const CyberWordInvaders = () => {
   const [words, setWords] = useState([]);
+  const [playfieldWidth, setPlayfieldWidth] = useState(800);
+  const [playfieldHeight, setPlayfieldHeight] = useState(720);
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [wordsCleared, setWordsCleared] = useState(0);
@@ -16,11 +18,8 @@ const CyberWordInvaders = () => {
   const gameLoopRef = useRef();
 
   const wordLists = useMemo(() => ({
-    1: ['mov', 'push', 'pop', 'jmp', 'call', 'ret', 'xor', 'lea', 'test', 'cmp', 'add', 'sub',
-        'mul', 'div', 'inc', 'dec', 'nop', 'int', 'jne', 'je', 'jz', 'jnz', 'jg', 'jl', 'and',
-        'or', 'not', 'shl', 'shr', 'rol', 'ror', 'neg', 'imul', 'idiv', 'cdq', 'cbw', 'lodsb',
-        'stosb', 'movsb', 'scasb', 'cmpsb', 'rep', 'repe', 'repne', 'loop', 'jbe', 'ja', 'jna',
-        'jge', 'jle', 'jc', 'jnc', 'jo', 'jno', 'js', ],
+    1: ['mov', 'push', 'pop', 'jmp', 'call', 'ret', 'add', 'sub', 'inc', 'dec',
+        'cmp', 'test', 'jz', 'jnz', 'int'],
     2: ['printf', 'scanf', 'malloc', 'free', 'calloc', 'realloc', 'strlen', 'strcpy', 'strcat',
         'strcmp', 'strncpy', 'memcpy', 'memset', 'memmove', 'fopen', 'fclose', 'fread', 'fwrite',
         'fprintf', 'fscanf', 'fgets', 'fputs', 'getchar', 'putchar', 'atoi', 'atof', 'sprintf',
@@ -36,13 +35,29 @@ const CyberWordInvaders = () => {
     return list[Math.floor(Math.random() * list.length)];
   }, [level, wordLists]);
 
+  const pickNonDuplicateWord = useCallback((existingTexts = []) => {
+    const list = wordLists[Math.min(level, 4)] || wordLists[4];
+    const available = list.filter(word => !existingTexts.includes(word));
+    if (available.length === 0) return null;
+    return available[Math.floor(Math.random() * available.length)];
+  }, [level, wordLists]);
+
   const getSpawnRate = useCallback(() => {
     return Math.max(600 - (level * 50), 150);
   }, [level]);
 
   const getWordSpeed = useCallback(() => {
-    return 0.4 + (level * 0.2) + Math.random() * 0.4;
+    const baseSpeed = 0.4 + (level * 0.2) + Math.random() * 0.4;
+    if (level === 1) return baseSpeed * 0.8; // 20% slower for level 1
+    if (level === 2) return baseSpeed * 0.9; // 10% slower for level 2
+    return baseSpeed;
   }, [level]);
+
+  const getSpawnX = useCallback(() => {
+    const padding = 20;
+    const available = Math.max(playfieldWidth - padding * 2, 50);
+    return padding + Math.random() * available;
+  }, [playfieldWidth]);
 
   const getMaxWords = useCallback(() => {
     return 10 + Math.floor(level / 2);
@@ -59,42 +74,48 @@ const CyberWordInvaders = () => {
     return themes[Math.min(level, 5)] || themes[5];
   };
 
-  // Initialize game with 5 words at start
+  // Initialize game with a small batch of unique words at start
   useEffect(() => {
     if (!initialized && !gameOver) {
       const initialWords = [];
       const usedPositions = [];
+      const usedWords = [];
+      const initialSpawnCount = 3;
 
       const isPositionValid = (x, positions) => {
         return !positions.some(pos => Math.abs(pos - x) < 80);
       };
 
-      for (let i = 0; i < 5; i++) {
-        let wordX = Math.random() * 650 + 20;
+      for (let i = 0; i < initialSpawnCount; i++) {
+        let wordX = getSpawnX();
         let attempts = 0;
 
         while (!isPositionValid(wordX, usedPositions) && attempts < 20) {
-          wordX = Math.random() * 650 + 20;
+          wordX = getSpawnX();
           attempts++;
         }
 
         usedPositions.push(wordX);
 
+        const nextWord = pickNonDuplicateWord(usedWords);
+        if (!nextWord) break;
+
         initialWords.push({
           id: Date.now() + Math.random() + i,
-          text: getRandomWord(),
+          text: nextWord,
           x: wordX,
           y: Math.random() * -200,
           speed: getWordSpeed(),
           progress: 0,
         });
+        usedWords.push(nextWord);
       }
 
       setWords(initialWords);
-      setWordsSpawned(5);
+      setWordsSpawned(initialWords.length);
       setInitialized(true);
     }
-  }, [initialized, gameOver, getRandomWord, getWordSpeed]);
+  }, [initialized, gameOver, pickNonDuplicateWord, getWordSpeed, getSpawnX]);
 
   useEffect(() => {
     if (wordsCleared >= wordsNeeded) {
@@ -122,15 +143,24 @@ const CyberWordInvaders = () => {
         }
 
         setWords(prev => {
+          // If enough words are already on screen to finish the level, pause spawning
+          if (wordsCleared + prev.length >= wordsNeeded) {
+            return prev;
+          }
+
           // Limit max words on screen based on level
           if (prev.length >= getMaxWords()) {
             return prev;
           }
 
+          const existingTexts = prev.map(w => w.text);
+          const nextWord = pickNonDuplicateWord(existingTexts);
+          if (!nextWord) return prev;
+
           const newWord = {
             id: Date.now() + Math.random(),
-            text: getRandomWord(),
-            x: Math.random() * 550 + 20,
+            text: nextWord,
+            x: getSpawnX(),
             y: 0,
             speed: getWordSpeed(),
             progress: 0,
@@ -144,18 +174,19 @@ const CyberWordInvaders = () => {
     }, getSpawnRate());
 
     return () => clearInterval(spawnInterval);
-  }, [gameOver, wordsNeeded, getMaxWords, getRandomWord, getWordSpeed, getSpawnRate]);
+  }, [gameOver, wordsCleared, wordsNeeded, getMaxWords, pickNonDuplicateWord, getWordSpeed, getSpawnRate, getSpawnX]);
 
   useEffect(() => {
     if (gameOver) return;
 
     const animate = () => {
+      const failY = playfieldHeight - 40; // allow words to reach closer to the bottom
       setWords(prev => {
         const updated = prev.map(word => ({
           ...word,
           y: word.y + word.speed
         })).filter(word => {
-          if (word.y > 520) {
+          if (word.y > failY) {
             setGameOver(true);
             return false;
           }
@@ -168,7 +199,7 @@ const CyberWordInvaders = () => {
 
     gameLoopRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(gameLoopRef.current);
-  }, [gameOver]);
+  }, [gameOver, playfieldHeight]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -264,6 +295,21 @@ const CyberWordInvaders = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [handleKeyPress]);
 
+  // Track playfield size to keep it responsive (90% of viewport, taller by default)
+  useEffect(() => {
+    const updateSize = () => {
+      const newWidth = Math.max(Math.floor(window.innerWidth * 0.9), 400);
+      const targetHeight = 720; // 20% taller than previous 600 baseline
+      const viewportHeight = Math.floor(window.innerHeight * 0.9);
+      const newHeight = Math.max(Math.min(viewportHeight, targetHeight), 500);
+      setPlayfieldWidth(newWidth);
+      setPlayfieldHeight(newHeight);
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
   return (
     <div style={{ 
       display: 'flex', 
@@ -276,8 +322,8 @@ const CyberWordInvaders = () => {
     }}>
       <div style={{ 
         position: 'relative', 
-        width: '800px', 
-        height: '600px', 
+        width: `${playfieldWidth}px`, 
+        height: `${playfieldHeight}px`, 
         background: 'linear-gradient(to bottom, #1a1a2e, #000)',
         border: '4px solid #0f0',
         borderRadius: '8px',
