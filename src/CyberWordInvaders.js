@@ -30,11 +30,6 @@ const CyberWordInvaders = () => {
         'stack', 'buffer', 'overflow', 'injection', 'fuzzing', 'signature', 'heuristic']
   }), []);
 
-  const getRandomWord = useCallback(() => {
-    const list = wordLists[Math.min(level, 4)] || wordLists[4];
-    return list[Math.floor(Math.random() * list.length)];
-  }, [level, wordLists]);
-
   const pickNonDuplicateWord = useCallback((existingTexts = []) => {
     const list = wordLists[Math.min(level, 4)] || wordLists[4];
     const available = list.filter(word => !existingTexts.includes(word));
@@ -53,9 +48,11 @@ const CyberWordInvaders = () => {
     return baseSpeed;
   }, [level]);
 
-  const getSpawnX = useCallback(() => {
+  const getSpawnX = useCallback((wordLength = 0) => {
     const padding = 20;
-    const available = Math.max(playfieldWidth - padding * 2, 50);
+    // Approximate width: 17px per character with some buffer for glow/shadow
+    const estimatedWidth = Math.max(wordLength * 17, 40);
+    const available = Math.max(playfieldWidth - padding * 2 - estimatedWidth, 20);
     return padding + Math.random() * available;
   }, [playfieldWidth]);
 
@@ -87,18 +84,18 @@ const CyberWordInvaders = () => {
       };
 
       for (let i = 0; i < initialSpawnCount; i++) {
-        let wordX = getSpawnX();
+        const nextWord = pickNonDuplicateWord(usedWords);
+        if (!nextWord) break;
+
+        let wordX = getSpawnX(nextWord.length);
         let attempts = 0;
 
         while (!isPositionValid(wordX, usedPositions) && attempts < 20) {
-          wordX = getSpawnX();
+          wordX = getSpawnX(nextWord.length);
           attempts++;
         }
 
         usedPositions.push(wordX);
-
-        const nextWord = pickNonDuplicateWord(usedWords);
-        if (!nextWord) break;
 
         initialWords.push({
           id: Date.now() + Math.random() + i,
@@ -160,7 +157,7 @@ const CyberWordInvaders = () => {
           const newWord = {
             id: Date.now() + Math.random(),
             text: nextWord,
-            x: getSpawnX(),
+            x: getSpawnX(nextWord.length),
             y: 0,
             speed: getWordSpeed(),
             progress: 0,
