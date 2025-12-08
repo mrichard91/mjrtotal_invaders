@@ -1,13 +1,26 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
+const getInitialLevel = () => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const levelParam = parseInt(params.get('level'), 10);
+    if (Number.isFinite(levelParam)) {
+      return Math.min(Math.max(levelParam, 1), 5);
+    }
+  } catch (e) {
+    // Ignore parse errors and fall back to default
+  }
+  return 1;
+};
+
 const CyberWordInvaders = () => {
   const [words, setWords] = useState([]);
   const [playfieldWidth, setPlayfieldWidth] = useState(800);
   const [playfieldHeight, setPlayfieldHeight] = useState(720);
   const [score, setScore] = useState(0);
-  const [level, setLevel] = useState(1);
+  const [level, setLevel] = useState(() => getInitialLevel());
   const [wordsCleared, setWordsCleared] = useState(0);
-  const [wordsNeeded, setWordsNeeded] = useState(25);
+  const [wordsNeeded, setWordsNeeded] = useState(20);
   const [wordsSpawned, setWordsSpawned] = useState(0); // eslint-disable-line no-unused-vars
   const [gameOver, setGameOver] = useState(false);
   const [currentInput, setCurrentInput] = useState('');
@@ -24,8 +37,13 @@ const CyberWordInvaders = () => {
         'strcmp', 'strncpy', 'memcpy', 'memset', 'memmove', 'fopen', 'fclose', 'fread', 'fwrite',
         'fprintf', 'fscanf', 'fgets', 'fputs', 'getchar', 'putchar', 'atoi', 'atof', 'sprintf',
         'sscanf', 'strstr', 'strchr', 'strtok', 'rand', 'srand', 'exit', 'abort'],
-    3: ['shellcode', 'payload', 'exploit', 'backdoor', 'rootkit', 'ransomware', 'trojan',
-        'malware', 'virus', 'worm', 'packer', 'unpacker', 'obfuscate', 'decompile'],
+    3: ['all', 'and', 'any', 'ascii', 'at', 'base64', 'base64wide', 'condition',
+        'contains', 'endswith', 'entrypoint', 'false', 'filesize', 'for', 'fullword', 'global',
+        'import', 'icontains', 'iendswith', 'iequals', 'in', 'include', 'int16', 'int16be',
+        'int32', 'int32be', 'int8', 'int8be', 'istartswith', 'matches', 'meta', 'nocase',
+        'none', 'not', 'of', 'or', 'private', 'rule', 'startswith', 'strings',
+        'them', 'true', 'uint16', 'uint16be', 'uint32', 'uint32be', 'uint8', 'uint8be',
+        'wide', 'xor', 'defined'],
     4: ['firewall', 'encrypt', 'decrypt', 'sandbox', 'debugger', 'breakpoint', 'heap',
         'stack', 'buffer', 'overflow', 'injection', 'fuzzing', 'signature', 'heuristic']
   }), []);
@@ -38,13 +56,16 @@ const CyberWordInvaders = () => {
   }, [level, wordLists]);
 
   const getSpawnRate = useCallback(() => {
-    return Math.max(600 - (level * 50), 150);
+    const base = Math.max(600 - (level * 50), 150);
+    const levelModifier = level === 2 ? 1.3 : level === 3 ? 0.8 : 1; // slow level 2, speed up level 3
+    return Math.floor(base * levelModifier);
   }, [level]);
 
   const getWordSpeed = useCallback(() => {
     const baseSpeed = 0.4 + (level * 0.2) + Math.random() * 0.4;
     if (level === 1) return baseSpeed * 0.8; // 20% slower for level 1
     if (level === 2) return baseSpeed * 0.9; // 10% slower for level 2
+    if (level === 3) return baseSpeed * 1.05; // slightly faster than level 2
     return baseSpeed;
   }, [level]);
 
@@ -121,7 +142,7 @@ const CyberWordInvaders = () => {
       setLevel(prev => prev + 1);
       setWordsCleared(0);
       setWordsSpawned(0);
-      setWordsNeeded(25);
+      setWordsNeeded(20);
       setLevelUp(true);
       setTimeout(() => setLevelUp(false), 2000);
     }
@@ -215,10 +236,10 @@ const CyberWordInvaders = () => {
   const restartGame = useCallback(() => {
     setWords([]);
     setScore(0);
-    setLevel(1);
+    setLevel(getInitialLevel());
     setWordsCleared(0);
     setWordsSpawned(0);
-    setWordsNeeded(25);
+    setWordsNeeded(20);
     setGameOver(false);
     setCurrentInput('');
     setActiveWordId(null);
