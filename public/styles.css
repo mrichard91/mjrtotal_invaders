@@ -1,0 +1,231 @@
+:root {
+  --green: #00ff44;
+  --cyan: #00e7ff;
+  --red: #ff0000;
+  --yellow: #ffe100;
+  --bg-top: #1a1a2e;
+  --bg-bottom: #000000;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Courier New", monospace;
+  background: #000000;
+  color: var(--green);
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: radial-gradient(circle at top, #111833, #000000 60%);
+}
+
+#playfield {
+  position: relative;
+  background: linear-gradient(to bottom, var(--bg-top), var(--bg-bottom));
+  border: 4px solid var(--green);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 50px rgba(0, 255, 0, 0.3);
+}
+
+#hud {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+}
+
+.hud-item {
+  color: var(--green);
+  font-size: 18px;
+  text-shadow: 0 0 10px var(--green);
+}
+
+#hud-threats {
+  color: var(--cyan);
+  text-shadow: 0 0 10px var(--cyan);
+}
+
+#current-input {
+  position: absolute;
+  top: 60px;
+  left: 20px;
+  color: var(--cyan);
+  font-size: 18px;
+  text-shadow: 0 0 10px var(--cyan);
+  min-height: 24px;
+}
+
+#word-layer,
+#explosion-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.word {
+  position: absolute;
+  font-size: 28px;
+  font-weight: bold;
+  white-space: nowrap;
+  text-shadow: 0 0 12px var(--red), 0 0 24px rgba(255, 0, 0, 0.6);
+}
+
+.word.active {
+  text-shadow: 0 0 15px var(--yellow);
+}
+
+.word .completed {
+  color: var(--green);
+}
+
+.word .remaining {
+  color: var(--red);
+}
+
+.word.active .remaining {
+  color: var(--yellow);
+}
+
+.explosion {
+  position: absolute;
+  font-size: 42px;
+  font-weight: bold;
+  color: var(--yellow);
+  text-shadow: 0 0 15px var(--yellow);
+  transition: transform 0.1s linear, opacity 0.1s linear;
+}
+
+#level-up {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--cyan);
+  font-size: 48px;
+  font-weight: bold;
+  text-shadow: 0 0 30px var(--cyan);
+  z-index: 15;
+  animation: pulse 0.5s ease-in-out;
+}
+
+#overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 20;
+  padding: 20px;
+}
+
+#overlay.gameover {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+#overlay.intro {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+#overlay.victory {
+  background: rgba(0, 40, 0, 0.9);
+}
+
+#overlay .victory-title {
+  font-size: 60px;
+  color: var(--green);
+  text-shadow: 0 0 30px var(--green), 0 0 60px rgba(0, 255, 68, 0.6);
+  margin-bottom: 20px;
+}
+
+#overlay .title {
+  font-size: 60px;
+  color: var(--red);
+  text-shadow: 0 0 20px var(--red);
+  margin-bottom: 20px;
+}
+
+#overlay .stat {
+  font-size: 30px;
+  color: var(--green);
+  text-shadow: 0 0 10px var(--green);
+  margin-bottom: 10px;
+}
+
+#overlay .prompt {
+  font-size: 20px;
+  color: var(--cyan);
+  text-shadow: 0 0 10px var(--cyan);
+}
+
+#overlay .intro-title {
+  font-size: 36px;
+  margin-bottom: 20px;
+  color: var(--cyan);
+  text-shadow: 0 0 18px var(--cyan), 0 0 36px rgba(0, 231, 255, 0.7);
+}
+
+#overlay .intro-text {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: var(--green);
+  text-shadow: 0 0 14px var(--green), 0 0 28px rgba(0, 255, 68, 0.6);
+}
+
+#overlay .intro-hint {
+  font-size: 16px;
+  color: var(--yellow);
+  text-shadow: 0 0 16px var(--yellow), 0 0 28px rgba(255, 225, 0, 0.6);
+}
+
+.hidden {
+  display: none !important;
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@media (max-width: 700px) {
+  #hud {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  #level-up {
+    font-size: 36px;
+  }
+
+  #overlay .title {
+    font-size: 40px;
+  }
+
+  #overlay .stat {
+    font-size: 24px;
+  }
+}
