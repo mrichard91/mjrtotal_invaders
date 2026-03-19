@@ -24,9 +24,9 @@ export const levels = [
       'sscanf', 'strstr', 'strchr', 'strtok', 'rand', 'srand', 'exit', 'abort'
     ],
     wordsNeeded: 15,
-    maxOnScreen: 4,
-    spawnRateMs: 1800,
-    baseSpeed: 0.55,
+    maxOnScreen: 3,
+    spawnRateMs: 2000,
+    baseSpeed: 0.48,
     speedVariance: 0.2,
     initialSpawnCount: 2,
   },
